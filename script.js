@@ -23,6 +23,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIndex = 0;
     let checkedStatus = {};
 
+    // ▼▼▼ [추가됨] 영어 원어민 음성을 저장할 변수 ▼▼▼
+    let englishVoice = null;
+    // ▲▲▲ [추가됨] ▲▲▲
+
+    // ▼▼▼ [추가됨] 사용 가능한 음성 목록에서 영어 음성을 찾아 설정하는 함수 ▼▼▼
+    function loadAndSetVoice() {
+        // 브라우저가 제공하는 음성 목록 가져오기
+        const voices = window.speechSynthesis.getVoices();
+
+        // 'en-US' (미국 영어) 음성을 우선적으로 찾습니다.
+        englishVoice = voices.find((voice) => voice.lang === 'en-US');
+
+        // 만약 미국 영어 음성이 없다면, 다른 영어 음성이라도 찾습니다.
+        if (!englishVoice) {
+            englishVoice = voices.find((voice) => voice.lang.startsWith('en-'));
+        }
+    }
+    // ▲▲▲ [추가됨] ▲▲▲
+
     // 1. 데이터 로딩
     async function loadWords() {
         try {
@@ -84,14 +103,23 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCheckmark();
     }
 
-    // 단어 발음 듣기 기능
+    // ▼▼▼ [수정됨] 단어 발음 듣기 기능 ▼▼▼
     function speakWord(word) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
+
+        // 미리 찾아둔 영어 음성이 있다면, 해당 음성으로 설정합니다.
+        if (englishVoice) {
+            utterance.voice = englishVoice;
+        }
+
+        // 언어와 속도 설정 (음성을 못 찾았을 경우를 위한 대비)
         utterance.lang = 'en-US';
         utterance.rate = 0.9;
+
         window.speechSynthesis.speak(utterance);
     }
+    // ▲▲▲ [수정됨] ▲▲▲
 
     // 5. 카드 이동
     function showNextCard() {
@@ -123,30 +151,24 @@ document.addEventListener('DOMContentLoaded', () => {
         card.classList.toggle('is-flipped');
     });
 
-    // ▼▼▼ [수정됨] 스피커 아이콘 애니메이션 로직 추가 ▼▼▼
     speakerIcon.addEventListener('click', (e) => {
         e.stopPropagation();
 
         const wordToSpeak = wordDisplay.textContent;
         if (wordToSpeak && 'speechSynthesis' in window) {
-            // 애니메이션 클래스 추가
             speakerIcon.classList.add('speaking');
-
             speakWord(wordToSpeak);
-
-            // 애니메이션이 끝나면 클래스 제거 (다음 클릭을 위해)
             speakerIcon.addEventListener(
                 'animationend',
                 () => {
                     speakerIcon.classList.remove('speaking');
                 },
                 { once: true },
-            ); // 이벤트 리스너를 한 번만 실행 후 자동 제거
+            );
         } else {
             alert('음성 지원이 되지 않는 브라우저입니다.');
         }
     });
-    // ▲▲▲ [수정됨] ▲▲▲
 
     checkmarkAreas.forEach((area) => {
         area.addEventListener('click', (e) => {
@@ -183,6 +205,16 @@ document.addEventListener('DOMContentLoaded', () => {
             showPrevCard();
         }
     }
+
+    // ▼▼▼ [추가됨] 페이지 로딩 시 음성 목록을 가져오도록 설정 ▼▼▼
+    // getVoices()는 비동기로 작동하므로, voiceschanged 이벤트가 발생했을 때 음성을 찾아야 합니다.
+    if ('speechSynthesis' in window) {
+        loadAndSetVoice(); // 초기에 한 번 실행
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadAndSetVoice;
+        }
+    }
+    // ▲▲▲ [추가됨] ▲▲▲
 
     // 초기 데이터 로딩
     loadWords();
