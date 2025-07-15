@@ -110,6 +110,23 @@ body {
   height: 60%;
   max-height: 500px;
   perspective: 1000px;
+  margin-bottom: 20px;
+}
+
+/* ▼▼▼ [추가됨] 진행 상황 텍스트 스타일 ▼▼▼ */
+.progress-text {
+  color: #777;
+  font-size: 1.1em;
+  font-weight: 500;
+  height: 20px;
+  /* 텍스트가 바뀔 때 레이아웃이 흔들리지 않도록 높이 고정 */
+}
+
+/* ▲▲▲ [추가됨] ▲▲▲ */
+
+/* 이전/다음 버튼 (데스크탑용) */
+.navigation-buttons {
+  margin-top: 20px;
 }
 
 .card {

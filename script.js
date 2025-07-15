@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
     const speakerIcon = document.getElementById('speaker-icon');
+    const progressDisplay = document.getElementById('progress-display');
 
     // 상태 변수
     let allWords = {};
@@ -72,6 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
         progMeaning.textContent = wordData.prog;
         dictMeaning.textContent = wordData.dict;
         updateCheckmark();
+
+        progressDisplay.textContent = `${currentIndex + 1} / ${shuffledIndices.length}`;
     }
 
     // 4. 체크마크 업데이트 및 토글
