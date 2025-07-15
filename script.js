@@ -22,25 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let shuffledIndices = [];
     let currentIndex = 0;
     let checkedStatus = {};
-
-    // ▼▼▼ [추가됨] 영어 원어민 음성을 저장할 변수 ▼▼▼
     let englishVoice = null;
-    // ▲▲▲ [추가됨] ▲▲▲
+    let isAnimating = false; // ▼▼▼ [추가됨] 애니메이션 진행 상태를 추적하는 변수 ▼▼▼
 
-    // ▼▼▼ [추가됨] 사용 가능한 음성 목록에서 영어 음성을 찾아 설정하는 함수 ▼▼▼
+    // 영어 음성 찾기
     function loadAndSetVoice() {
-        // 브라우저가 제공하는 음성 목록 가져오기
         const voices = window.speechSynthesis.getVoices();
-
-        // 'en-US' (미국 영어) 음성을 우선적으로 찾습니다.
-        englishVoice = voices.find((voice) => voice.lang === 'en-US');
-
-        // 만약 미국 영어 음성이 없다면, 다른 영어 음성이라도 찾습니다.
-        if (!englishVoice) {
-            englishVoice = voices.find((voice) => voice.lang.startsWith('en-'));
-        }
+        englishVoice = voices.find((voice) => voice.lang === 'en-US') || voices.find((voice) => voice.lang.startsWith('en-'));
     }
-    // ▲▲▲ [추가됨] ▲▲▲
 
     // 1. 데이터 로딩
     async function loadWords() {
@@ -66,22 +55,22 @@ document.addEventListener('DOMContentLoaded', () => {
             [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
         }
         currentIndex = 0;
-        displayCard();
+        displayCardContent();
         stageSelectionScreen.classList.remove('active');
         flashcardScreen.classList.add('active');
     }
 
-    // 3. 카드 내용 표시
-    function displayCard() {
+    // 3. 카드 내용 표시 (이름 변경: displayCard -> displayCardContent)
+    function displayCardContent() {
         if (shuffledIndices.length === 0) return;
         const wordIndex = shuffledIndices[currentIndex];
         const wordData = currentWords[wordIndex];
 
+        // 애니메이션을 위해 카드 내용을 즉시 업데이트
+        card.classList.remove('is-flipped'); // 카드를 앞면으로
         wordDisplay.textContent = wordData.word;
         progMeaning.textContent = wordData.prog;
         dictMeaning.textContent = wordData.dict;
-
-        card.classList.remove('is-flipped');
         updateCheckmark();
     }
 
@@ -103,39 +92,90 @@ document.addEventListener('DOMContentLoaded', () => {
         updateCheckmark();
     }
 
-    // ▼▼▼ [수정됨] 단어 발음 듣기 기능 ▼▼▼
+    // 단어 발음 듣기 기능
     function speakWord(word) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(word);
-
-        // 미리 찾아둔 영어 음성이 있다면, 해당 음성으로 설정합니다.
         if (englishVoice) {
             utterance.voice = englishVoice;
         }
-
-        // 언어와 속도 설정 (음성을 못 찾았을 경우를 위한 대비)
         utterance.lang = 'en-US';
         utterance.rate = 0.9;
-
         window.speechSynthesis.speak(utterance);
     }
-    // ▲▲▲ [수정됨] ▲▲▲
 
-    // 5. 카드 이동
+    // ▼▼▼ [수정됨] 카드 이동 함수 전체 수정 ▼▼▼
     function showNextCard() {
+        if (isAnimating) return; // 애니메이션 중이면 실행하지 않음
+
+        // 현재 카드를 확인한 것으로 자동 표시
         const level = currentStageDisplay.textContent.charAt(0);
         const wordIndex = shuffledIndices[currentIndex];
         if (!checkedStatus[level][wordIndex]) {
             checkedStatus[level][wordIndex] = true;
         }
-        currentIndex = (currentIndex + 1) % shuffledIndices.length;
-        displayCard();
+
+        isAnimating = true;
+        card.classList.add('slide-out-left');
+
+        // 사라지는 애니메이션이 끝난 후
+        card.addEventListener(
+            'animationend',
+            () => {
+                // 인덱스 업데이트 및 카드 내용 변경
+                currentIndex = (currentIndex + 1) % shuffledIndices.length;
+                displayCardContent();
+
+                // 나타나는 애니메이션 적용
+                card.classList.add('slide-in-from-right');
+
+                // 나타나는 애니메이션이 끝난 후
+                card.addEventListener(
+                    'animationend',
+                    () => {
+                        card.classList.remove('slide-in-from-right');
+                        isAnimating = false;
+                    },
+                    { once: true },
+                );
+            },
+            { once: true },
+        );
     }
 
     function showPrevCard() {
-        currentIndex = (currentIndex - 1 + shuffledIndices.length) % shuffledIndices.length;
-        displayCard();
+        if (isAnimating) return;
+        isAnimating = true;
+        card.classList.add('slide-out-right');
+
+        card.addEventListener(
+            'animationend',
+            () => {
+                currentIndex = (currentIndex - 1 + shuffledIndices.length) % shuffledIndices.length;
+                displayCardContent();
+
+                card.classList.add('slide-in-from-left');
+
+                card.addEventListener(
+                    'animationend',
+                    () => {
+                        card.classList.remove('slide-in-from-left');
+                        isAnimating = false;
+                    },
+                    { once: true },
+                );
+            },
+            { once: true },
+        );
     }
+
+    // `animationend` 이벤트 발생 시 애니메이션 클래스를 확실히 제거하기 위한 수정
+    card.addEventListener('animationend', (e) => {
+        if (e.animationName.includes('slide-out')) {
+            card.classList.remove('slide-out-left', 'slide-out-right');
+        }
+    });
+    // ▲▲▲ [수정됨] ▲▲▲
 
     // 6. 이벤트 리스너 설정
     stageButtons.forEach((button) => {
@@ -147,13 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
         stageSelectionScreen.classList.add('active');
     });
 
-    card.addEventListener('click', () => {
-        card.classList.toggle('is-flipped');
+    card.addEventListener('click', (e) => {
+        if (isAnimating) return; // 애니메이션 중에는 뒤집기 방지
+        // 스피커나 체크마크 영역이 아니면 뒤집기
+        if (!e.target.closest('#speaker-icon') && !e.target.closest('.checkmark-area')) {
+            card.classList.toggle('is-flipped');
+        }
     });
 
     speakerIcon.addEventListener('click', (e) => {
         e.stopPropagation();
-
         const wordToSpeak = wordDisplay.textContent;
         if (wordToSpeak && 'speechSynthesis' in window) {
             speakerIcon.classList.add('speaking');
@@ -187,12 +230,14 @@ document.addEventListener('DOMContentLoaded', () => {
     cardArea.addEventListener(
         'touchstart',
         (e) => {
+            if (isAnimating) return;
             touchStartX = e.changedTouches[0].screenX;
         },
         { passive: true },
     );
 
     cardArea.addEventListener('touchend', (e) => {
+        if (isAnimating) return;
         touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
     });
@@ -206,16 +251,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // ▼▼▼ [추가됨] 페이지 로딩 시 음성 목록을 가져오도록 설정 ▼▼▼
-    // getVoices()는 비동기로 작동하므로, voiceschanged 이벤트가 발생했을 때 음성을 찾아야 합니다.
+    // 초기 설정
     if ('speechSynthesis' in window) {
-        loadAndSetVoice(); // 초기에 한 번 실행
+        loadAndSetVoice();
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = loadAndSetVoice;
         }
     }
-    // ▲▲▲ [추가됨] ▲▲▲
-
-    // 초기 데이터 로딩
     loadWords();
 });

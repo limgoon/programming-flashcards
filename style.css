@@ -267,6 +267,73 @@ body {
   margin: 0 10px;
 }
 
+/* ▼▼▼ [추가됨] 카드 슬라이드 애니메이션 ▼▼▼ */
+@keyframes slide-out-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(120%);
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.card.slide-out-left {
+  animation: slide-out-left 0.4s ease-in-out forwards;
+}
+
+.card.slide-in-from-right {
+  animation: slide-in-from-right 0.4s ease-in-out forwards;
+}
+
+.card.slide-out-right {
+  animation: slide-out-right 0.4s ease-in-out forwards;
+}
+
+.card.slide-in-from-left {
+  animation: slide-in-from-left 0.4s ease-in-out forwards;
+}
+
+/* ▲▲▲ [추가됨] ▲▲▲ */
+
 @media (pointer: coarse) {
   .navigation-buttons {
     display: none;
